@@ -7,20 +7,32 @@
  * Description: helper functions for managing processes
  */
 
-#include "egos.h"
 #include "process.h"
-#include "syscall.h"
+
 #include <string.h>
+
+#include "egos.h"
+#include "syscall.h"
 
 void intr_entry(int id);
 
 void excp_entry(int id) {
     /* Student's code goes here: */
 
+    proc_set[proc_curr_idx].mepc += 4;
+
     /* If the exception is a system call, handle the system call and return */
+    if (id == 8 || id == 11) {
+        system_call();
+        return;
+    }
 
     /* Kill the process if curr_pid is a user app instead of a grass server */
-
+    if (curr_pid >= GPID_USER_START) {
+        INFO("process %d killed by interrupt", curr_pid);
+        asm("csrw mepc, %0" ::"r"(0x8005008));
+        return;
+    }
     /* Student's code ends here. */
 
     FATAL("excp_entry: kernel got exception %d", id);

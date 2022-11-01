@@ -7,17 +7,21 @@
  * Description: the system call interface to user applications
  */
 
-#include "egos.h"
 #include "syscall.h"
+
 #include <string.h>
 
-static struct syscall *sc = (struct syscall*)SYSCALL_ARG;
+#include "egos.h"
+
+static struct syscall* sc = (struct syscall*)SYSCALL_ARG;
 
 static void sys_invoke() {
-    /* The standard way of system call is using the `ecall` instruction; 
+    /* The standard way of system call is using the `ecall` instruction;
      * Here uses software interrupt for simplicity. */
-    *((int*)0x2000000) = 1;
-    while (sc->type != SYS_UNUSED);
+    // *((int*)0x2000000) = 1;
+    asm(ecall);
+    while (sc->type != SYS_UNUSED)
+        ;
 }
 
 int sys_send(int receiver, char* msg, int size) {
@@ -27,7 +31,7 @@ int sys_send(int receiver, char* msg, int size) {
     sc->msg.receiver = receiver;
     memcpy(sc->msg.content, msg, size);
     sys_invoke();
-    return sc->retval;    
+    return sc->retval;
 }
 
 int sys_recv(int* sender, char* buf, int size) {
